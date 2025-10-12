@@ -189,17 +189,22 @@ app.get('/api/products', (req, res) => {
   });
 });
 
-// Get product by ID
+// Single product endpoint
 app.get('/api/products/:id', (req, res) => {
   const { id } = req.params;
+  console.log('Fetching product with ID:', id);
+  
   db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
     if (err) {
+      console.error('Database error:', err);
       res.status(500).json({ error: err.message });
       return;
     }
     if (row) {
+      console.log('Product found:', row);
       res.json(row);
     } else {
+      console.log('Product not found for ID:', id);
       res.status(404).json({ error: 'Product not found' });
     }
   });

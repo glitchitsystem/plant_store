@@ -49,9 +49,12 @@ const Profile = () => {
       <div className="orders-section">
         <h3>Order History</h3>
         {loading ? (
-          <p>Loading orders...</p>
+          <div className="loading-orders">Loading your orders...</div>
         ) : orders.length === 0 ? (
-          <p>No orders found.</p>
+          <div className="no-orders">
+            <h4>No orders found</h4>
+            <p>You haven't placed any orders yet.</p>
+          </div>
         ) : (
           <div className="orders-list">
             {orders.map(order => (
@@ -59,12 +62,16 @@ const Profile = () => {
                 <div className="order-header">
                   <span className="order-id">Order #{order.id}</span>
                   <span className="order-date">
-                    {new Date(order.created_at).toLocaleDateString()}
+                    {new Date(order.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </span>
                 </div>
                 <div className="order-details">
-                  <p><strong>Total:</strong> ${order.total_amount}</p>
-                  <p><strong>Status:</strong> {order.status}</p>
+                  <p className="order-total"><strong>Total: ${order.total_amount}</strong></p>
+                  <p><strong>Status:</strong> <span className="order-status">{order.status}</span></p>
                 </div>
               </div>
             ))}
