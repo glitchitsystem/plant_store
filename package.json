@@ -4,6 +4,7 @@
   "description": "Plant & Garden Ecommerce Website",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "dev-setup": "cd server && npm run setup-db && cd .. && npm run dev",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",
     "build": "cd client && npm run build",

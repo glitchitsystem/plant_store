@@ -112,9 +112,9 @@
   border: 2px solid #e9ecef;
 }
 
-.product-image {
-  width: 80px;
-  height: 80px;
+.modal-body .product-info .product-image {
+  width: 40px;
+  height: 40px;
   object-fit: cover;
   border-radius: 8px;
   flex-shrink: 0;
@@ -209,3 +209,4 @@
     flex-direction: column;
   }
 }
+
