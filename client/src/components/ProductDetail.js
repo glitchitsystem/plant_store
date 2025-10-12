@@ -15,7 +15,7 @@ const ProductDetail = () => {
 
   useEffect(() => {
     fetchProduct();
-  }, [id]);
+  }, [fetchProduct]);
 
   const fetchProduct = async () => {
     try {

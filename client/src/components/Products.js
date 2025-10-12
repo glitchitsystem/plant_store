@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import ProductCard from './ProductCard';
 import './Products.css';
@@ -52,7 +52,7 @@ const Products = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [categoryParam]);
+  }, []); // Only run once on mount, prevents infinite loop
 
   const handleCategoryFilter = (category) => {
     setSelectedCategory(category);
@@ -62,14 +62,6 @@ const Products = () => {
       const filtered = products.filter(product => product.category === category);
       setFilteredProducts(filtered);
     }
-  };
-
-  const handleAddToCart = (product) => {
-    addToCart(product);
-  };
-
-  const formatPrice = (price) => {
-    return `$${parseFloat(price).toFixed(2)}`;
   };
 
   if (loading) {

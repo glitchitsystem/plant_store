@@ -6,10 +6,6 @@ import './Cart.css';
 const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
 
-  const formatPrice = (price) => {
-    return `$${parseFloat(price).toFixed(2)}`;
-  };
-
   const getTotalItems = () => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   };

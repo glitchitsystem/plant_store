@@ -58,7 +58,7 @@ db.serialize(() => {
       description: 'A popular houseplant with large, violin-shaped leaves.',
       price: 45.99,
       category: 'Indoor Plants',
-      image: 'https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1545239705-1564e58b9e4a?w=400&h=400&fit=crop',
       stock: 12
     },
     {
@@ -66,7 +66,7 @@ db.serialize(() => {
       description: 'Elegant flowering plant that purifies the air.',
       price: 28.99,
       category: 'Indoor Plants',
-      image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1616694547693-b0f829a6cf30?w=400&h=400&fit=crop',
       stock: 18
     },
     {
@@ -74,7 +74,7 @@ db.serialize(() => {
       description: 'Glossy-leaved indoor plant that\'s easy to care for.',
       price: 32.99,
       category: 'Indoor Plants',
-      image: 'https://images.unsplash.com/photo-1586973824893-c3ab8b0e5725?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1669392597221-bbfd4b6e13ff?w=400&h=400&fit=crop',
       stock: 16
     },
     {
@@ -90,7 +90,7 @@ db.serialize(() => {
       description: 'Beautiful flowering bush perfect for outdoor gardens.',
       price: 38.99,
       category: 'Outdoor Plants',
-      image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1496062031456-07b8f162a322?w=400&h=400&fit=crop',
       stock: 14
     },
     {
@@ -106,7 +106,7 @@ db.serialize(() => {
       description: 'Colorful annual flowers that repel garden pests.',
       price: 7.99,
       category: 'Outdoor Plants',
-      image: 'https://images.unsplash.com/photo-1597018352759-68b3d0b257a8?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1620005807545-2e08850d6591?w=400&h=400&fit=crop',
       stock: 40
     },
     {
@@ -114,7 +114,7 @@ db.serialize(() => {
       description: 'Aromatic herb great for cooking and landscaping.',
       price: 12.99,
       category: 'Herbs',
-      image: 'https://images.unsplash.com/photo-1542990253-a781e04c0082?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1582745741856-1a5d68158ba3?w=400&h=400&fit=crop',
       stock: 30
     },
     {
@@ -138,7 +138,7 @@ db.serialize(() => {
       description: 'Versatile culinary herb with a delightful fragrance.',
       price: 11.99,
       category: 'Herbs',
-      image: 'https://images.unsplash.com/photo-1581629411914-3a4c1f01a42e?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1606072104299-cdaab62c0a07?w=400&h=400&fit=crop',
       stock: 26
     },
     {
@@ -146,7 +146,7 @@ db.serialize(() => {
       description: 'Essential Mediterranean herb for Italian dishes.',
       price: 9.99,
       category: 'Herbs',
-      image: 'https://images.unsplash.com/photo-1628556270526-e6d4e5a5b5e5?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1690877468013-f5c174498a53?w=400&h=400&fit=crop',
       stock: 28
     },
     {
@@ -154,7 +154,7 @@ db.serialize(() => {
       description: 'A variety of small succulents perfect for beginners.',
       price: 19.99,
       category: 'Succulents',
-      image: 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1692052191004-73d930963a2f?w=400&h=400&fit=crop',
       stock: 22
     },
     {
@@ -162,7 +162,7 @@ db.serialize(() => {
       description: 'Healing succulent with medicinal properties.',
       price: 16.99,
       category: 'Succulents',
-      image: 'https://images.unsplash.com/photo-1509423350716-97f2360af889?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1570295835271-04c05b4ed943?w=400&h=400&fit=crop',
       stock: 28
     },
     {
@@ -170,7 +170,7 @@ db.serialize(() => {
       description: 'Lucky succulent with thick, glossy leaves.',
       price: 21.99,
       category: 'Succulents',
-      image: 'https://images.unsplash.com/photo-1520412099551-62b6bafeb1bb?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1616189596748-20a7a4687a62?w=400&h=400&fit=crop',
       stock: 24
     },
     {
@@ -178,7 +178,7 @@ db.serialize(() => {
       description: 'Rosette-shaped succulent with beautiful colors.',
       price: 14.99,
       category: 'Succulents',
-      image: 'https://images.unsplash.com/photo-1516020004842-2f67448d0c78?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1668508380767-a13f204bde1c?w=400&h=400&fit=crop',
       stock: 30
     },
     {
@@ -210,7 +210,7 @@ db.serialize(() => {
       description: 'Elegant copper watering can for your garden.',
       price: 18.99,
       category: 'Accessories',
-      image: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1667992714862-df8713baf8c6?w=400&h=400&fit=crop',
       stock: 20
     },
     {
@@ -218,7 +218,7 @@ db.serialize(() => {
       description: 'Organic fertilizer for healthy plant growth.',
       price: 12.99,
       category: 'Accessories',
-      image: 'https://images.unsplash.com/photo-1583628068543-d8f7b0a5c732?w=400&h=400&fit=crop',
+      image: 'https://images.unsplash.com/photo-1710666184386-9f42d0227237?w=400&h=400&fit=crop',
       stock: 45
     }
   ];

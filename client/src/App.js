@@ -12,6 +12,11 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
 import Footer from './components/Footer';
+import Contact from './pages/Contact';
+import Shipping from './pages/Shipping';
+import Returns from './pages/Returns';
+import Care from './pages/Care';
+import About from './pages/About';
 import './App.css';
 
 function App() {
@@ -31,6 +36,11 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/shipping" element={<Shipping />} />
+                <Route path="/returns" element={<Returns />} />
+                <Route path="/care" element={<Care />} />
+                <Route path="/about" element={<About />} />
               </Routes>
             </main>
             <Footer />

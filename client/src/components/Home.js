@@ -27,6 +27,12 @@ const Home = () => {
       description: 'Everything you need for plant care',
       emoji: '🪣',
       category: 'Accessories'
+    },
+    {
+      name: 'Outdoor',
+      description: 'Hardy plants for your outdoor garden and patio',
+      emoji: '🌳',
+      category: 'Outdoor'
     }
   ];
 
@@ -70,11 +76,6 @@ const Home = () => {
               <div className="feature-icon">💚</div>
               <h3>Expert Care Tips</h3>
               <p>Detailed care instructions with every plant</p>
-            </div>
-            <div className="feature">
-              <div className="feature-icon">🏠</div>
-              <h3>Perfect for Any Space</h3>
-              <p>Indoor, outdoor, and office-friendly options</p>
             </div>
           </div>
         </div>
