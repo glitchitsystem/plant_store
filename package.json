@@ -1,0 +1,19 @@
+{
+  "name": "plant-ecommerce",
+  "version": "1.0.0",
+  "description": "Plant & Garden Ecommerce Website",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": ["ecommerce", "plants", "react", "express", "sqlite"],
+  "author": "",
+  "license": "MIT"
+}
