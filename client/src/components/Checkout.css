@@ -117,6 +117,16 @@
   margin-bottom: 1rem;
 }
 
+.checkout-error-message {
+  color: #d32f2f;
+  background: #fff4f4;
+  border: 1px solid #f8d7da;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
 .place-order-button {
   width: 100%;
   background-color: #4CAF50;

@@ -93,6 +93,16 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   };
 
+  // Add this function to update cart quantities based on server response
+  const updateCartQuantities = (adjustedItems) => {
+    setCartItems(currentCart =>
+      currentCart.map(item => {
+        const adjusted = adjustedItems.find(ai => ai.id === item.id);
+        return adjusted ? { ...item, quantity: adjusted.quantity } : item;
+      })
+    );
+  };
+
   const value = {
     cartItems,
     addToCart,
@@ -100,7 +110,8 @@ export const CartProvider = ({ children }) => {
     updateQuantity,
     clearCart,
     getTotalPrice,
-    getTotalItems
+    getTotalItems,
+    updateCartQuantities
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import AddToCartModal from './AddToCartModal';
@@ -7,13 +7,13 @@ import './ProductDetail.css';
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, cart = [] } = useCart();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  const fetchProduct = async () => {
+  const fetchProduct = useCallback(async () => {
     try {
       const response = await fetch(`/api/products/${id}`);
       if (!response.ok) {
@@ -27,13 +27,21 @@ const ProductDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchProduct();
-  }, []); // Only run once on mount
+  }, [fetchProduct]);
 
   const handleAddToCart = () => {
+    // Count total quantity for this product in the cart
+    const cartItem = cart.find(item => item.id === product.id);
+    const cartQuantity = cartItem ? cartItem.quantity : 0;
+    // If cartQuantity + 1 would exceed stock, prevent adding
+    if (cartQuantity + 1 > product.stock) {
+      alert('You cannot add more than the available stock for this item.');
+      return;
+    }
     try {
       addToCart(product, () => setShowModal(true));
     } catch (error) {

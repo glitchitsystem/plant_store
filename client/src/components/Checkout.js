@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import './Checkout.css';
 
 const Checkout = () => {
-  const { cartItems = [], getTotalPrice, clearCart } = useCart();
+  const { cartItems = [], getTotalPrice, clearCart, updateCartQuantities } = useCart();
   const { token } = useAuth();
   const navigate = useNavigate();
   
@@ -19,7 +19,7 @@ const Checkout = () => {
   });
   
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errorMessages, setErrorMessages] = useState([]);
 
   // Redirect if cart is empty
   if (!cartItems || cartItems.length === 0) {
@@ -46,7 +46,7 @@ const Checkout = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setErrorMessages([]);
 
     try {
       const orderData = {
@@ -74,16 +74,23 @@ const Checkout = () => {
       const responseData = await response.json();
       console.log('Order response:', responseData);
 
+      if (!response.ok && responseData.adjustedItems) {
+        updateCartQuantities(responseData.adjustedItems);
+        setErrorMessages(responseData.errors || [responseData.error]);
+        setLoading(false);
+        return;
+      }
+
       if (response.ok) {
         clearCart();
         alert('Order placed successfully! Order ID: ' + responseData.orderId);
         navigate('/');
       } else {
-        setError(responseData.error || 'Failed to place order. Please try again.');
+        setErrorMessages(responseData.errors || [responseData.error]);
       }
     } catch (error) {
       console.error('Order submission error:', error);
-      setError('An error occurred. Please try again.');
+      setErrorMessages(['An error occurred. Please try again.']);
     }
 
     setLoading(false);
@@ -117,7 +124,13 @@ const Checkout = () => {
 
         <div className="checkout-form">
           <h3>Shipping Information</h3>
-          {error && <div className="error-message">{error}</div>}
+          {errorMessages.length > 0 && (
+            <div className="checkout-error-message">
+              {errorMessages.map((msg, idx) => (
+                <div key={idx}>{msg}</div>
+              ))}
+            </div>
+          )}
           
           <form onSubmit={handleSubmit}>
             <div className="form-group">

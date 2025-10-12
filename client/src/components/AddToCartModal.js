@@ -1,9 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
 import './AddToCartModal.css';
 
 const AddToCartModal = ({ isOpen, onClose, product }) => {
+  const { cart = [] } = useCart();
+
   if (!isOpen || !product) return null;
+
+  // Find current quantity in cart for this product
+  const cartItem = cart.find(item => item.id === product.id);
+  const cartQuantity = cartItem ? cartItem.quantity : 0;
+  const maxReached = cartQuantity >= product.stock;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -22,6 +30,11 @@ const AddToCartModal = ({ isOpen, onClose, product }) => {
               <h4>{product.name}</h4>
               <p className="product-category">{product.category}</p>
               <p className="product-price">${product.price?.toFixed(2)}</p>
+              {maxReached && (
+                <div className="field-error">
+                  You have added the maximum available stock for this item.
+                </div>
+              )}
             </div>
           </div>
         </div>

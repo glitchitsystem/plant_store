@@ -364,7 +364,7 @@ app.get('/api/auth/me', verifyToken, (req, res) => {
 });
 
 // Orders endpoint
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', async (req, res) => {
   console.log('Order creation request:', req.body);
   const { items, total, shipping } = req.body;
   const { name, email } = shipping;
@@ -374,23 +374,32 @@ app.post('/api/orders', (req, res) => {
     return res.status(400).json({ error: 'Missing required order information' });
   }
 
-  // Get user ID from token if available
-  const token = req.headers.authorization?.split(' ')[1];
-  let userId = null;
-
-  if (token) {
-    try {
-      const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, 'your-secret-key');
-      userId = decoded.userId;
-    } catch (error) {
-      console.log('Invalid token for order, proceeding as guest');
-    }
+  // Validate and adjust stock for each item before creating order
+  let adjustedItems = [];
+  let stockErrors = [];
+  for (const item of items) {
+    await new Promise((resolve) => {
+      db.get('SELECT stock, name FROM products WHERE id = ?', [item.id], (err, row) => {
+        if (err || !row) {
+          stockErrors.push(`Product not found (ID ${item.id})`);
+        } else if (row.stock < item.quantity) {
+          // Adjust quantity to max available
+          adjustedItems.push({ ...item, quantity: row.stock });
+          stockErrors.push(`Not enough stock for "${row.name}". Only ${row.stock} available. Your cart has been updated.`);
+        } else {
+          adjustedItems.push(item);
+        }
+        resolve();
+      });
+    });
+  }
+  if (stockErrors.length > 0) {
+    return res.status(400).json({ errors: stockErrors, adjustedItems });
   }
 
   db.run(
     'INSERT INTO orders (customerName, customerEmail, items, total, status, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
-    [name, email, JSON.stringify(items), total, 'pending', new Date().toISOString()],
+    [name, email, JSON.stringify(adjustedItems), total, 'pending', new Date().toISOString()],
     function(err) {
       if (err) {
         console.error('Order creation error:', err);
@@ -399,6 +408,15 @@ app.post('/api/orders', (req, res) => {
       }
       
       console.log('Order created successfully with ID:', this.lastID);
+
+      // Subtract stock for each item
+      adjustedItems.forEach(item => {
+        db.run(
+          'UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?',
+          [item.quantity, item.id, item.quantity]
+        );
+      });
+
       res.json({ 
         id: this.lastID, 
         message: 'Order placed successfully',
@@ -408,134 +426,7 @@ app.post('/api/orders', (req, res) => {
   );
 });
 
-// Get orders for authenticated user
-app.get('/api/orders', (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-
-  try {
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, 'your-secret-key');
-    
-    // Get user's email first
-    db.get('SELECT email FROM users WHERE id = ?', [decoded.userId], (userErr, user) => {
-      if (userErr || !user) {
-        return res.status(401).json({ error: 'Invalid user' });
-      }
-
-      // Get orders for this user's email
-      db.all(
-        'SELECT * FROM orders WHERE customerEmail = ? ORDER BY createdAt DESC',
-        [user.email],
-        (err, rows) => {
-          if (err) {
-            console.error('Orders fetch error:', err);
-            res.status(500).json({ error: err.message });
-            return;
-          }
-          
-          // Parse items JSON for each order
-          const ordersWithItems = rows.map(order => ({
-            ...order,
-            items: JSON.parse(order.items || '[]'),
-            total_amount: order.total,
-            created_at: order.createdAt
-          }));
-          
-          res.json(ordersWithItems);
-        }
-      );
-    });
-  } catch (error) {
-    console.error('Token verification error:', error);
-    res.status(401).json({ error: 'Invalid token' });
-  }
-});
-
-// Get user's order history
-app.get('/api/orders/my-orders', verifyToken, (req, res) => {
-  db.all(
-    'SELECT id, customerName, customerEmail, items, total, status, createdAt FROM orders WHERE userId = ? ORDER BY createdAt DESC',
-    [req.user.userId],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      // Parse items JSON for each order
-      const orders = rows.map(order => ({
-        ...order,
-        items: JSON.parse(order.items)
-      }));
-
-      res.json(orders);
-    }
-  );
-});
-
-// Get order by ID (updated to check user ownership)
-app.get('/api/orders/:id', optionalAuth, (req, res) => {
-  const { id } = req.params;
-  const userId = req.user ? req.user.userId : null;
-  
-  // If user is authenticated, only show their orders
-  // If not authenticated, show any order (for guest checkout confirmation)
-  let query = 'SELECT * FROM orders WHERE id = ?';
-  let params = [id];
-  
-  if (userId) {
-    query = 'SELECT * FROM orders WHERE id = ? AND userId = ?';
-    params = [id, userId];
-  }
-  
-  db.get(query, params, (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    if (row) {
-      // Parse items JSON
-      row.items = JSON.parse(row.items);
-      res.json(row);
-    } else {
-      res.status(404).json({ error: 'Order not found' });
-    }
-  });
-});
-
-// Add error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`API endpoints available at http://localhost:${PORT}/api`);
-  console.log('Make sure frontend proxy points to this port');
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.log(`Port ${PORT} is busy, trying port ${PORT + 1}`);
-    app.listen(PORT + 1, () => {
-      console.log(`Server running on port ${PORT + 1}`);
-    });
-  } else {
-    console.error('Server error:', err);
-  }
-});
-
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('Shutting down server...');
-  db.close((err) => {
-    if (err) {
-      console.error('Error closing database:', err.message);
-    } else {
-      console.log('Database connection closed');
-    }
-    process.exit(0);
-  });
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
