@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import api from '../config/api';
+import { useAuth } from '../context/AuthContext';
 import './Checkout.css';
 
 const Checkout = () => {
   const { cart, getCartTotal, clearCart } = useCart();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,6 +20,7 @@ const Checkout = () => {
     zipCode: '',
     country: 'United States'
   });
+  const [error, setError] = useState(null);
 
   const formatPrice = (price) => {
     return `$${parseFloat(price).toFixed(2)}`;
@@ -34,51 +36,41 @@ const Checkout = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (cart.length === 0) {
-      alert('Your cart is empty!');
-      return;
-    }
-
     setLoading(true);
 
     try {
       const orderData = {
-        customerName: `${formData.firstName} ${formData.lastName}`,
-        customerEmail: formData.email,
-        customerPhone: formData.phone,
-        shippingAddress: {
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode,
-          country: formData.country
-        },
-        items: cart.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity
-        })),
+        items: cart,
         total: getCartTotal(),
-        status: 'pending'
+        shipping: formData
       };
 
-      const response = await api.post('/orders', orderData);
-      
-      if (response.data && response.data.id) {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(orderData)
+      });
+
+      if (response.ok) {
         clearCart();
         alert('Order placed successfully! You will receive a confirmation email shortly.');
         navigate('/');
       } else {
-        throw new Error('Order submission failed');
+        setError('Failed to place order. Please try again.');
       }
     } catch (error) {
-      console.error('Error placing order:', error);
-      alert('There was an error placing your order. Please try again.');
-    } finally {
-      setLoading(false);
+      setError('An error occurred. Please try again.');
     }
+
+    setLoading(false);
   };
 
   if (cart.length === 0) {
@@ -223,6 +215,8 @@ const Checkout = () => {
             >
               {loading ? 'Placing Order...' : 'Place Order'}
             </button>
+
+            {error && <div className="error-message">{error}</div>}
           </form>
         </div>
         

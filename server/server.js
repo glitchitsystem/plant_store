@@ -3,9 +3,12 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 // Middleware
 app.use(cors({
@@ -13,6 +16,38 @@ app.use(cors({
   credentials: true
 }));
 app.use(bodyParser.json());
+
+// JWT verification middleware
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// Optional auth middleware (doesn't require token)
+const optionalAuth = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+    } catch (error) {
+      // Token invalid, but continue without user
+    }
+  }
+  next();
+};
 
 // Database connection and initialization
 const db = new sqlite3.Database('./ecommerce.db', (err) => {
@@ -26,6 +61,20 @@ const db = new sqlite3.Database('./ecommerce.db', (err) => {
 
 // Initialize database tables and sample data
 function initializeDatabase() {
+  // Create users table
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    firstName TEXT NOT NULL,
+    lastName TEXT NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) {
+      console.error('Error creating users table:', err.message);
+    }
+  });
+
   // Create products table
   db.run(`CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,15 +99,17 @@ function initializeDatabase() {
     }
   });
 
-  // Create orders table
+  // Update orders table to include userId
   db.run(`CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER,
     customerName TEXT NOT NULL,
     customerEmail TEXT NOT NULL,
     items TEXT NOT NULL,
     total REAL NOT NULL,
     status TEXT DEFAULT 'pending',
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users (id)
   )`);
 }
 
@@ -170,13 +221,155 @@ app.get('/api/categories', (req, res) => {
   });
 });
 
-// Create order
-app.post('/api/orders', (req, res) => {
+// Authentication Routes
+
+// Register new user
+app.post('/api/auth/register', async (req, res) => {
+  const { email, password, firstName, lastName } = req.body;
+
+  if (!email || !password || !firstName || !lastName) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  try {
+    // Check if user already exists
+    db.get('SELECT id FROM users WHERE email = ?', [email], async (err, row) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (row) {
+        return res.status(400).json({ error: 'User already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Insert new user
+      db.run(
+        'INSERT INTO users (email, password, firstName, lastName) VALUES (?, ?, ?, ?)',
+        [email, hashedPassword, firstName, lastName],
+        function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Failed to create user' });
+          }
+
+          // Generate JWT token
+          const token = jwt.sign(
+            { 
+              userId: this.lastID, 
+              email: email,
+              firstName: firstName,
+              lastName: lastName 
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+          );
+
+          res.status(201).json({
+            message: 'User created successfully',
+            token,
+            user: {
+              id: this.lastID,
+              email,
+              firstName,
+              lastName
+            }
+          });
+        }
+      );
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Login user
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    try {
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      
+      if (!isValidPassword) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { 
+          userId: user.id, 
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName 
+        },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      res.json({
+        message: 'Login successful',
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+});
+
+// Get current user profile
+app.get('/api/auth/me', verifyToken, (req, res) => {
+  db.get('SELECT id, email, firstName, lastName, createdAt FROM users WHERE id = ?', [req.user.userId], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  });
+});
+
+// Get all orders
+app.get('/api/orders', (req, res) => {
+  db.all('SELECT * FROM orders', [], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
+
+// Create order (updated to handle authenticated users)
+app.post('/api/orders', optionalAuth, (req, res) => {
   const { customerName, customerEmail, items, total } = req.body;
+  const userId = req.user ? req.user.userId : null;
   
   db.run(
-    'INSERT INTO orders (customerName, customerEmail, items, total, status) VALUES (?, ?, ?, ?, ?)',
-    [customerName, customerEmail, JSON.stringify(items), total, 'pending'],
+    'INSERT INTO orders (userId, customerName, customerEmail, items, total, status) VALUES (?, ?, ?, ?, ?, ?)',
+    [userId, customerName, customerEmail, JSON.stringify(items), total, 'pending'],
     function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -190,10 +383,43 @@ app.post('/api/orders', (req, res) => {
   );
 });
 
-// Get order by ID
-app.get('/api/orders/:id', (req, res) => {
+// Get user's order history
+app.get('/api/orders/my-orders', verifyToken, (req, res) => {
+  db.all(
+    'SELECT id, customerName, customerEmail, items, total, status, createdAt FROM orders WHERE userId = ? ORDER BY createdAt DESC',
+    [req.user.userId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      // Parse items JSON for each order
+      const orders = rows.map(order => ({
+        ...order,
+        items: JSON.parse(order.items)
+      }));
+
+      res.json(orders);
+    }
+  );
+});
+
+// Get order by ID (updated to check user ownership)
+app.get('/api/orders/:id', optionalAuth, (req, res) => {
   const { id } = req.params;
-  db.get('SELECT * FROM orders WHERE id = ?', [id], (err, row) => {
+  const userId = req.user ? req.user.userId : null;
+  
+  // If user is authenticated, only show their orders
+  // If not authenticated, show any order (for guest checkout confirmation)
+  let query = 'SELECT * FROM orders WHERE id = ?';
+  let params = [id];
+  
+  if (userId) {
+    query = 'SELECT * FROM orders WHERE id = ? AND userId = ?';
+    params = [id, userId];
+  }
+  
+  db.get(query, params, (err, row) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;

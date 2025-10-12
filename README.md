@@ -4,10 +4,13 @@ A full-stack ecommerce website for plants and garden accessories built with Reac
 
 ## Features
 
+- **User Authentication**: Register, login, and user profiles
 - **Product Catalog**: Browse plants by categories (Indoor Plants, Herbs, Succulents, Accessories)
 - **Product Details**: View detailed information about each plant
 - **Shopping Cart**: Add/remove items, update quantities
 - **Checkout System**: Place orders with customer information
+- **Order History**: Authenticated users can view their past orders
+- **Guest Checkout**: Non-registered users can still place orders
 - **Responsive Design**: Works on desktop and mobile devices
 - **Free Stock Images**: Uses Unsplash for beautiful plant photography
 
@@ -23,6 +26,8 @@ A full-stack ecommerce website for plants and garden accessories built with Reac
 ### Backend
 - Node.js & Express.js
 - SQLite database
+- JWT for authentication
+- bcrypt for password hashing
 - CORS enabled for cross-origin requests
 
 ## Installation & Setup
@@ -88,14 +93,31 @@ npm start
 
 ## API Endpoints
 
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user profile (requires auth)
+
+### Products
 - `GET /api/products` - Get all products
 - `GET /api/products/:id` - Get product by ID
 - `GET /api/products/category/:category` - Get products by category
 - `GET /api/categories` - Get all categories
-- `POST /api/orders` - Create new order
-- `GET /api/orders/:id` - Get order by ID
+
+### Orders
+- `POST /api/orders` - Create new order (optional auth)
+- `GET /api/orders/:id` - Get order by ID (optional auth)
+- `GET /api/orders/my-orders` - Get user's order history (requires auth)
 
 ## Database Schema
+
+### Users Table
+- `id` (Primary Key)
+- `email` - User email (unique)
+- `password` - Hashed password
+- `firstName` - User's first name
+- `lastName` - User's last name
+- `createdAt` - Account creation timestamp
 
 ### Products Table
 - `id` (Primary Key)
@@ -108,6 +130,7 @@ npm start
 
 ### Orders Table
 - `id` (Primary Key)
+- `userId` - Foreign key to users table (nullable for guest orders)
 - `customerName` - Customer full name
 - `customerEmail` - Customer email
 - `items` - JSON string of ordered items
@@ -151,7 +174,6 @@ The application uses custom CSS with:
 
 ## Future Enhancements
 
-- User authentication and accounts
 - Payment integration (Stripe, PayPal)
 - Product reviews and ratings
 - Wishlist functionality
