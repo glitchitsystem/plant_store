@@ -1,49 +1,61 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './Checkout.css';
 
 const Checkout = () => {
-  const { cart, getCartTotal, clearCart } = useCart();
+  const { cartItems = [], getTotalPrice, clearCart } = useCart();
   const { token } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
-    phone: '',
     address: '',
     city: '',
-    state: '',
     zipCode: '',
-    country: 'United States'
+    phone: ''
   });
-  const [error, setError] = useState(null);
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const formatPrice = (price) => {
-    return `$${parseFloat(price).toFixed(2)}`;
-  };
+  // Redirect if cart is empty
+  if (!cartItems || cartItems.length === 0) {
+    return (
+      <div className="checkout-container">
+        <div className="empty-cart">
+          <h2>Your cart is empty</h2>
+          <p>Add some items to your cart before checking out.</p>
+          <button onClick={() => navigate('/products')} className="continue-shopping-btn">
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
       const orderData = {
-        items: cart,
-        total: getCartTotal(),
+        items: cartItems,
+        total: getTotalPrice(),
         shipping: formData
       };
+
+      console.log('Submitting order:', orderData);
 
       const headers = {
         'Content-Type': 'application/json'
@@ -59,71 +71,69 @@ const Checkout = () => {
         body: JSON.stringify(orderData)
       });
 
+      const responseData = await response.json();
+      console.log('Order response:', responseData);
+
       if (response.ok) {
         clearCart();
-        alert('Order placed successfully! You will receive a confirmation email shortly.');
+        alert('Order placed successfully! Order ID: ' + responseData.orderId);
         navigate('/');
       } else {
-        setError('Failed to place order. Please try again.');
+        setError(responseData.error || 'Failed to place order. Please try again.');
       }
     } catch (error) {
+      console.error('Order submission error:', error);
       setError('An error occurred. Please try again.');
     }
 
     setLoading(false);
   };
 
-  if (cart.length === 0) {
-    return (
-      <div className="checkout-container">
-        <div className="empty-checkout">
-          <h2>Your cart is empty</h2>
-          <p>Add some plants to your cart before checking out.</p>
-          <button onClick={() => navigate('/products')} className="shop-button">
-            Shop Now
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const total = getTotalPrice ? getTotalPrice() : 0;
 
   return (
     <div className="checkout-container">
-      <h1>Checkout</h1>
+      <h2>Checkout</h2>
       
       <div className="checkout-content">
+        <div className="order-summary">
+          <h3>Order Summary</h3>
+          <div className="order-items">
+            {cartItems.map(item => (
+              <div key={item.id} className="order-item">
+                <img src={item.image} alt={item.name} className="order-item-image" />
+                <div className="order-item-details">
+                  <h4>{item.name}</h4>
+                  <p>Quantity: {item.quantity}</p>
+                  <p>${(item.price * item.quantity).toFixed(2)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="order-total">
+            <h3>Total: ${total.toFixed(2)}</h3>
+          </div>
+        </div>
+
         <div className="checkout-form">
+          <h3>Shipping Information</h3>
+          {error && <div className="error-message">{error}</div>}
+          
           <form onSubmit={handleSubmit}>
-            <h2>Shipping Information</h2>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="firstName">First Name *</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="lastName">Last Name *</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            </div>
-            
             <div className="form-group">
-              <label htmlFor="email">Email Address *</label>
+              <label htmlFor="name">Full Name:</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email">Email:</label>
               <input
                 type="email"
                 id="email"
@@ -133,20 +143,9 @@ const Checkout = () => {
                 required
               />
             </div>
-            
+
             <div className="form-group">
-              <label htmlFor="phone">Phone Number</label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="address">Street Address *</label>
+              <label htmlFor="address">Address:</label>
               <input
                 type="text"
                 id="address"
@@ -156,10 +155,10 @@ const Checkout = () => {
                 required
               />
             </div>
-            
+
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="city">City *</label>
+                <label htmlFor="city">City:</label>
                 <input
                   type="text"
                   id="city"
@@ -169,21 +168,9 @@ const Checkout = () => {
                   required
                 />
               </div>
-              
+
               <div className="form-group">
-                <label htmlFor="state">State *</label>
-                <input
-                  type="text"
-                  id="state"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="zipCode">ZIP Code *</label>
+                <label htmlFor="zipCode">Zip Code:</label>
                 <input
                   type="text"
                   id="zipCode"
@@ -194,77 +181,27 @@ const Checkout = () => {
                 />
               </div>
             </div>
-            
+
             <div className="form-group">
-              <label htmlFor="country">Country</label>
-              <select
-                id="country"
-                name="country"
-                value={formData.country}
+              <label htmlFor="phone">Phone:</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
                 onChange={handleInputChange}
-              >
-                <option value="United States">United States</option>
-                <option value="Canada">Canada</option>
-              </select>
+                required
+              />
             </div>
-            
+
             <button 
               type="submit" 
-              className="place-order-button"
+              className="place-order-btn"
               disabled={loading}
             >
               {loading ? 'Placing Order...' : 'Place Order'}
             </button>
-
-            {error && <div className="error-message">{error}</div>}
           </form>
-        </div>
-        
-        <div className="order-summary">
-          <h2>Order Summary</h2>
-          
-          <div className="order-items">
-            {cart.map((item) => (
-              <div key={item.id} className="order-item">
-                <div className="order-item-image">
-                  <img 
-                    src={item.image} 
-                    alt={item.name}
-                    onError={(e) => {
-                      e.target.src = 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=100&h=100&fit=crop&crop=center';
-                    }}
-                  />
-                </div>
-                <div className="order-item-details">
-                  <h4>{item.name}</h4>
-                  <p>Quantity: {item.quantity}</p>
-                  <p>{formatPrice(item.price)} each</p>
-                </div>
-                <div className="order-item-total">
-                  {formatPrice(item.price * item.quantity)}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="order-totals">
-            <div className="total-row">
-              <span>Subtotal:</span>
-              <span>{formatPrice(getCartTotal())}</span>
-            </div>
-            <div className="total-row">
-              <span>Shipping:</span>
-              <span>Free</span>
-            </div>
-            <div className="total-row">
-              <span>Tax:</span>
-              <span>$0.00</span>
-            </div>
-            <div className="total-row final-total">
-              <span>Total:</span>
-              <span>{formatPrice(getCartTotal())}</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

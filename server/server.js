@@ -7,15 +7,38 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: 'http://localhost:3000',
   credentials: true
 }));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Add logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`, req.body);
+  next();
+});
+
+// Database connection
+const db = new sqlite3.Database('./ecommerce.db', (err) => {
+  if (err) {
+    console.error('Error opening database:', err);
+  } else {
+    console.log('Connected to SQLite database');
+    initializeDatabase();
+  }
+});
+
+// Import routes
+const authRoutes = require('./routes/auth');
+
+// Use routes
+app.use('/api/auth', authRoutes);
+console.log('Auth routes mounted at /api/auth');
 
 // JWT verification middleware
 const verifyToken = (req, res, next) => {
@@ -48,16 +71,6 @@ const optionalAuth = (req, res, next) => {
   }
   next();
 };
-
-// Database connection and initialization
-const db = new sqlite3.Database('./ecommerce.db', (err) => {
-  if (err) {
-    console.error('Error opening database:', err.message);
-  } else {
-    console.log('Connected to SQLite database');
-    initializeDatabase();
-  }
-});
 
 // Initialize database tables and sample data
 function initializeDatabase() {
@@ -159,12 +172,6 @@ function insertSampleProducts() {
   stmt.finalize();
   console.log('Sample products inserted');
 }
-
-// Add logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
-  next();
-});
 
 // Routes
 
@@ -351,36 +358,96 @@ app.get('/api/auth/me', verifyToken, (req, res) => {
   });
 });
 
-// Get all orders
-app.get('/api/orders', (req, res) => {
-  db.all('SELECT * FROM orders', [], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json(rows);
-  });
-});
+// Orders endpoint
+app.post('/api/orders', (req, res) => {
+  console.log('Order creation request:', req.body);
+  const { items, total, shipping } = req.body;
+  const { name, email } = shipping;
 
-// Create order (updated to handle authenticated users)
-app.post('/api/orders', optionalAuth, (req, res) => {
-  const { customerName, customerEmail, items, total } = req.body;
-  const userId = req.user ? req.user.userId : null;
-  
+  // Validate required fields
+  if (!items || !total || !name || !email) {
+    return res.status(400).json({ error: 'Missing required order information' });
+  }
+
+  // Get user ID from token if available
+  const token = req.headers.authorization?.split(' ')[1];
+  let userId = null;
+
+  if (token) {
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, 'your-secret-key');
+      userId = decoded.userId;
+    } catch (error) {
+      console.log('Invalid token for order, proceeding as guest');
+    }
+  }
+
   db.run(
-    'INSERT INTO orders (userId, customerName, customerEmail, items, total, status) VALUES (?, ?, ?, ?, ?, ?)',
-    [userId, customerName, customerEmail, JSON.stringify(items), total, 'pending'],
+    'INSERT INTO orders (customerName, customerEmail, items, total, status, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+    [name, email, JSON.stringify(items), total, 'pending', new Date().toISOString()],
     function(err) {
       if (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Order creation error:', err);
+        res.status(500).json({ error: 'Failed to create order: ' + err.message });
         return;
       }
+      
+      console.log('Order created successfully with ID:', this.lastID);
       res.json({ 
-        id: this.lastID,
-        message: 'Order created successfully'
+        id: this.lastID, 
+        message: 'Order placed successfully',
+        orderId: this.lastID
       });
     }
   );
+});
+
+// Get orders for authenticated user
+app.get('/api/orders', (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, 'your-secret-key');
+    
+    // Get user's email first
+    db.get('SELECT email FROM users WHERE id = ?', [decoded.userId], (userErr, user) => {
+      if (userErr || !user) {
+        return res.status(401).json({ error: 'Invalid user' });
+      }
+
+      // Get orders for this user's email
+      db.all(
+        'SELECT * FROM orders WHERE customerEmail = ? ORDER BY createdAt DESC',
+        [user.email],
+        (err, rows) => {
+          if (err) {
+            console.error('Orders fetch error:', err);
+            res.status(500).json({ error: err.message });
+            return;
+          }
+          
+          // Parse items JSON for each order
+          const ordersWithItems = rows.map(order => ({
+            ...order,
+            items: JSON.parse(order.items || '[]'),
+            total_amount: order.total,
+            created_at: order.createdAt
+          }));
+          
+          res.json(ordersWithItems);
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(401).json({ error: 'Invalid token' });
+  }
 });
 
 // Get user's order history
@@ -434,8 +501,16 @@ app.get('/api/orders/:id', optionalAuth, (req, res) => {
   });
 });
 
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API endpoints available at http://localhost:${PORT}/api`);
+  console.log('Make sure frontend proxy points to this port');
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.log(`Port ${PORT} is busy, trying port ${PORT + 1}`);

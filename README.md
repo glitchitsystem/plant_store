@@ -2,6 +2,44 @@
 
 A full-stack ecommerce website for plants and garden accessories built with React, Express.js, and SQLite.
 
+## Setup Instructions
+
+### 1. Install Dependencies
+
+```bash
+# Install server dependencies
+cd server
+npm install
+
+# Install client dependencies
+cd ../client
+npm install
+```
+
+### 2. Initialize Database
+
+```bash
+cd server
+npm run setup-db
+# or manually: node initDatabase.js
+```
+
+### 3. Start Development Servers
+
+```bash
+# Terminal 1 - Start backend server
+cd server
+npm run dev
+
+# Terminal 2 - Start frontend client
+cd client
+npm start
+```
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5001
+
 ## Features
 
 - **User Authentication**: Register, login, and user profiles
@@ -39,14 +77,11 @@ A full-stack ecommerce website for plants and garden accessories built with Reac
 ### 1. Install Dependencies
 
 ```bash
-# Install root dependencies
-npm install
-
 # Install server dependencies
 cd server
 npm install
 
-# Install client dependencies  
+# Install client dependencies
 cd ../client
 npm install
 ```
@@ -54,9 +89,9 @@ npm install
 ### 2. Initialize Database
 
 ```bash
-# From the server directory
 cd server
-npm run init-db
+npm run setup-db
+# or manually: node initDatabase.js
 ```
 
 This will create the SQLite database and populate it with sample plant products.

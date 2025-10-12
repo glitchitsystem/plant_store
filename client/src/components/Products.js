@@ -1,63 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import api from '../config/api';
+import ProductCard from './ProductCard';
 import './Products.css';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchParams] = useSearchParams();
-  const selectedCategory = searchParams.get('category') || 'All';
-  
+  const categoryParam = searchParams.get('category');
+
   const { addToCart } = useCart();
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        let url = '/products';
-        if (selectedCategory && selectedCategory !== 'All') {
-          url += `/category/${encodeURIComponent(selectedCategory)}`;
-        }
-        
-        const [productsResponse, categoriesResponse] = await Promise.all([
-          api.get(url),
-          api.get('/categories')
-        ]);
-        
-        setProducts(productsResponse.data);
-        setCategories(['All', ...categoriesResponse.data]);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load products. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [selectedCategory]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      let url = '/products';
-      if (selectedCategory && selectedCategory !== 'All') {
-        url += `/category/${encodeURIComponent(selectedCategory)}`;
+      // Use relative path - proxy will handle routing to backend
+      const response = await fetch('/api/products');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      const response = await api.get(url);
-      setProducts(response.data);
+      const data = await response.json();
+      setProducts(data);
+      setFilteredProducts(data);
+
+      // Extract unique categories from products
+      const uniqueCategories = ['All', ...new Set(data.map(product => product.category))];
+      setCategories(uniqueCategories);
+
+      if (categoryParam && uniqueCategories.includes(categoryParam)) {
+        setSelectedCategory(categoryParam);
+        const filtered = data.filter(product => product.category === categoryParam);
+        setFilteredProducts(filtered);
+      } else {
+        setSelectedCategory('All');
+        setFilteredProducts(data);
+      }
+
       setError(null);
     } catch (err) {
       console.error('Error fetching products:', err);
       setError('Failed to load products. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [categoryParam]);
+
+  const handleCategoryFilter = (category) => {
+    setSelectedCategory(category);
+    if (category === 'All') {
+      setFilteredProducts(products);
+    } else {
+      const filtered = products.filter(product => product.category === category);
+      setFilteredProducts(filtered);
     }
   };
 
@@ -100,72 +103,30 @@ const Products = () => {
         <p>Discover the perfect plants for your space</p>
       </div>
 
-      <div className="products-filters">
-        <label htmlFor="category-filter">Filter by Category:</label>
-        <select 
-          id="category-filter"
-          value={selectedCategory} 
-          onChange={(e) => {
-            const category = e.target.value;
-            const url = category === 'All' ? '/products' : `/products?category=${category}`;
-            window.history.pushState({}, '', url);
-            window.location.reload();
-          }}
-        >
+      <div className="filter-section">
+        <h3>Filter by Category:</h3>
+        <div className="category-filters">
           {categories.map(category => (
-            <option key={category} value={category}>
+            <button
+              key={category}
+              className={`filter-btn ${selectedCategory === category ? 'active' : ''}`}
+              onClick={() => handleCategoryFilter(category)}
+            >
               {category}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
-      {products.length === 0 ? (
-        <div className="no-products">
-          <p>No plants found in this category.</p>
-          <Link to="/products" className="back-button">
-            View All Products
-          </Link>
-        </div>
-      ) : (
-        <div className="products-grid">
-          {products.map(product => (
-            <div key={product.id} className="product-card">
-              <Link to={`/products/${product.id}`} className="product-link">
-                <div className="product-image">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    onError={(e) => {
-                      e.target.src = 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=300&h=300&fit=crop&crop=center';
-                    }}
-                  />
-                </div>
-                <div className="product-info">
-                  <h3 className="product-name">{product.name}</h3>
-                  <p className="product-category">{product.category}</p>
-                  <p className="product-description">
-                    {product.description && product.description.length > 100
-                      ? `${product.description.substring(0, 100)}...`
-                      : product.description
-                    }
-                  </p>
-                </div>
-              </Link>
-              <div className="product-actions">
-                <div className="product-price">{formatPrice(product.price)}</div>
-                <button 
-                  className="add-to-cart-btn"
-                  onClick={() => handleAddToCart(product)}
-                  disabled={product.stock === 0}
-                >
-                  {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="products-grid">
+        {filteredProducts.length === 0 ? (
+          <p className="no-products">No products found in this category.</p>
+        ) : (
+          filteredProducts.map(product => (
+            <ProductCard key={product.id} product={product} />
+          ))
+        )}
+      </div>
     </div>
   );
 };
