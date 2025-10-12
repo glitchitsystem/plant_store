@@ -13,10 +13,6 @@ const ProductDetail = () => {
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    fetchProduct();
-  }, [fetchProduct]);
-
   const fetchProduct = async () => {
     try {
       const response = await fetch(`/api/products/${id}`);
@@ -32,6 +28,10 @@ const ProductDetail = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProduct();
+  }, []); // Only run once on mount
 
   const handleAddToCart = () => {
     try {
