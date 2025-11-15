@@ -127,14 +127,14 @@ This document contains comprehensive test cases for the Plant Store e-commerce w
 
 ## API Test Cases
 
-### API Test Case 1: User Registration and Authentication
+### API Test Case 1: User Login and Authentication
 
 **Endpoint**: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`  
 **Objective**: Test complete authentication API workflow
 
 **Test Steps**:
 
-````javascript
+```javascript
 // 1. Login with created credentials
 POST /api/auth/login
 Content-Type: application/json
@@ -153,71 +153,4 @@ Authorization: Bearer <token_from_login>
 // Expected: 200 OK
 // Response should include: user details (id, name, email)
 
----
-
-### API Test Case 2: Product Catalog API
-
-**Endpoints**: `GET /api/products`, `GET /api/products/:id`, `GET /api/categories`
-**Objective**: Test product retrieval functionality
-
-**Test Steps**:
-
-```javascript
-// 1. Get all products
-GET /api/products
-
-// Expected: 200 OK
-// Response: Array of products with id, name, price, description, category, image, stock
-
-// 2. Get specific product by ID
-GET /api/products/1
-
-// Expected: 200 OK
-// Response: Single product object with all details
-
-// 3. Get products by category
-GET /api/products/category/Indoor%20Plants
-
-// Expected: 200 OK
-// Response: Array of products filtered by "Indoor Plants" category
-
-````
-
----
-
-### API Test Case 3: Order Creation and Stock Management
-
-**Endpoint**: `POST /api/orders`  
-**Objective**: Test order placement and inventory management
-
-**Test Steps**:
-
-```javascript
-// 1. Create valid order with sufficient stock
-POST /api/orders
-Content-Type: application/json
-{
-  "items": [
-    { "id": 1, "name": "Snake Plant", "price": 29.99, "quantity": 2 },
-    { "id": 3, "name": "Monstera Deliciosa", "price": 39.99, "quantity": 1 }
-  ],
-  "total": 99.97,
-  "shipping": {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "address": "123 Main St",
-    "city": "Anytown",
-    "state": "CA",
-    "zip": "12345"
-  }
-}
-
-// Expected: 200 OK
-// Response: { "id": <order_id>, "message": "Order placed successfully", "orderId": <id> }
-// Stock should be decremented for ordered items
-
-// 2. Verify stock was decremented after successful order
-GET /api/products/1
-
-// Expected: Stock count should be reduced by quantity ordered
 ```
