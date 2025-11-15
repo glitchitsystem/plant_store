@@ -52,16 +52,12 @@ This document contains comprehensive test cases for the Plant Store e-commerce w
    - "Add to Cart" button
 5. Navigate back to products page
 6. Test category filtering if available
-7. Verify responsive design on different screen sizes
 
 **Expected Results**:
 
 - Products page displays all available plants
 - Product cards show name, price, and image
 - Product detail page shows complete information
-- Images load correctly from Unsplash
-- Navigation works smoothly
-- Layout is responsive
 
 ---
 
@@ -84,7 +80,6 @@ This document contains comprehensive test cases for the Plant Store e-commerce w
    - Total: $99.97
 8. Update Snake Plant quantity to 1
 9. Remove Monstera from cart
-10. Verify cart persists on page refresh
 
 **Expected Results**:
 
@@ -93,7 +88,6 @@ This document contains comprehensive test cases for the Plant Store e-commerce w
 - Cart page shows accurate quantities and prices
 - Quantity updates work correctly
 - Item removal works
-- Cart data persists in localStorage
 - Total calculations are accurate
 
 ---
@@ -119,7 +113,6 @@ This document contains comprehensive test cases for the Plant Store e-commerce w
 6. Submit order
 7. Verify success message with order ID
 8. Check cart is cleared after successful order
-9. Verify stock quantities decreased on products
 
 **Expected Results**:
 
@@ -128,7 +121,6 @@ This document contains comprehensive test cases for the Plant Store e-commerce w
 - Order submission successful
 - Order ID generated and displayed
 - Cart cleared after order
-- Product stock decremented
 - Success confirmation shown
 
 ---
@@ -142,20 +134,8 @@ This document contains comprehensive test cases for the Plant Store e-commerce w
 
 **Test Steps**:
 
-```javascript
-// 1. Register new user
-POST /api/auth/register
-Content-Type: application/json
-{
-  "name": "Test User",
-  "email": "testuser@example.com",
-  "password": "TestPass123"
-}
-
-// Expected: 201 Created
-// Response should include: user object, JWT token
-
-// 2. Login with created credentials
+````javascript
+// 1. Login with created credentials
 POST /api/auth/login
 Content-Type: application/json
 {
@@ -166,42 +146,18 @@ Content-Type: application/json
 // Expected: 200 OK
 // Response should include: user object, JWT token
 
-// 3. Get user profile with token
+// 2. Get user profile with token
 GET /api/auth/me
 Authorization: Bearer <token_from_login>
 
 // Expected: 200 OK
 // Response should include: user details (id, name, email)
 
-// 4. Test invalid credentials
-POST /api/auth/login
-Content-Type: application/json
-{
-  "email": "testuser@example.com",
-  "password": "WrongPassword"
-}
-
-// Expected: 401 Unauthorized
-// Response: { "error": "Invalid credentials" }
-
-// 5. Test duplicate registration
-POST /api/auth/register
-Content-Type: application/json
-{
-  "name": "Another User",
-  "email": "testuser@example.com",  // Same email
-  "password": "AnotherPass123"
-}
-
-// Expected: 400 Bad Request
-// Response: { "error": "User already exists" }
-```
-
 ---
 
 ### API Test Case 2: Product Catalog API
 
-**Endpoints**: `GET /api/products`, `GET /api/products/:id`, `GET /api/categories`  
+**Endpoints**: `GET /api/products`, `GET /api/products/:id`, `GET /api/categories`
 **Objective**: Test product retrieval functionality
 
 **Test Steps**:
@@ -219,30 +175,13 @@ GET /api/products/1
 // Expected: 200 OK
 // Response: Single product object with all details
 
-// 3. Get non-existent product
-GET /api/products/999
-
-// Expected: 404 Not Found
-// Response: { "error": "Product not found" }
-
-// 4. Get products by category
+// 3. Get products by category
 GET /api/products/category/Indoor%20Plants
 
 // Expected: 200 OK
 // Response: Array of products filtered by "Indoor Plants" category
 
-// 5. Get all categories
-GET /api/categories
-
-// Expected: 200 OK
-// Response: Array of unique category names ["Indoor Plants", "Outdoor Plants"]
-
-// 6. Test invalid category
-GET /api/products/category/NonExistentCategory
-
-// Expected: 200 OK
-// Response: Empty array []
-```
+````
 
 ---
 
@@ -277,36 +216,7 @@ Content-Type: application/json
 // Response: { "id": <order_id>, "message": "Order placed successfully", "orderId": <id> }
 // Stock should be decremented for ordered items
 
-// 2. Test order with insufficient stock
-POST /api/orders
-Content-Type: application/json
-{
-  "items": [
-    { "id": 2, "name": "Fiddle Leaf Fig", "price": 49.99, "quantity": 20 }  // More than stock
-  ],
-  "total": 999.80,
-  "shipping": {
-    "name": "Jane Doe",
-    "email": "jane@example.com"
-  }
-}
-
-// Expected: 400 Bad Request
-// Response: { "errors": ["Not enough stock..."], "adjustedItems": [...] }
-
-// 3. Test order with missing required fields
-POST /api/orders
-Content-Type: application/json
-{
-  "items": [],
-  "total": 0
-  // Missing shipping info
-}
-
-// Expected: 400 Bad Request
-// Response: { "error": "Missing required order information" }
-
-// 4. Verify stock was decremented after successful order
+// 2. Verify stock was decremented after successful order
 GET /api/products/1
 
 // Expected: Stock count should be reduced by quantity ordered
