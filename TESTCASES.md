@@ -69,15 +69,15 @@ This document contains comprehensive test cases for the Plant Store e-commerce w
 **Steps**:
 
 1. Navigate to Products page
-2. Add "Snake Plant" ($29.99) to cart
+2. Add "Snake Plant" ($24.99) to cart
 3. Verify cart icon updates with item count
-4. Add "Monstera Deliciosa" ($39.99) to cart
+4. Add "Monstera Deliciosa" ($35.99) to cart
 5. Add another "Snake Plant" (should increase quantity)
 6. Navigate to Cart page (`/cart`)
 7. Verify cart contents:
-   - Snake Plant: Qty 2, Subtotal $59.98
-   - Monstera Deliciosa: Qty 1, Subtotal $39.99
-   - Total: $99.97
+   - Snake Plant: Qty 2, Subtotal $49.98
+   - Monstera Deliciosa: Qty 1, Subtotal $35.99
+   - Total: $85.97
 8. Update Snake Plant quantity to 1
 9. Remove Monstera from cart
 
